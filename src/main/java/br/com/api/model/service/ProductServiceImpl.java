@@ -86,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
 						.barCode(productTiny.getProduct().getCode())
 						.description(productTiny.getProduct().getName())
 						.price1(productTiny.getProduct().getPrice())
-						.price1(productTiny.getProduct().getPromotionalPrice())
+						.price2(productTiny.getProduct().getPromotionalPrice())
 						.dtCreate(LocalDateTime.now())
 						.build();
 				LOGGER.info("Inserindo produto " + productTiny.getProduct().getName());
