@@ -9,16 +9,16 @@ import br.com.api.model.service.ProductService;
 
 @EnableScheduling
 @SpringBootApplication
-public class Tinytog2Application {
+public class TinyToG2Application {
 	
 	private final ProductService productService;
 
-	public Tinytog2Application(ProductService productService) {
+	public TinyToG2Application(ProductService productService) {
 		this.productService = productService;
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.run(Tinytog2Application.class, args);
+		SpringApplication.run(TinyToG2Application.class, args);
 	}
 	
 	@Scheduled(cron = "* * * * * *")
