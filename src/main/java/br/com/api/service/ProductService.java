@@ -1,4 +1,4 @@
-package br.com.api.model.service;
+package br.com.api.service;
 
 import java.util.Optional;
 

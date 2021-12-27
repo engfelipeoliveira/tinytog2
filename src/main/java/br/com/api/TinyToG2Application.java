@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import br.com.api.model.service.ProductService;
+import br.com.api.service.ProductService;
 
 @EnableScheduling
 @SpringBootApplication
