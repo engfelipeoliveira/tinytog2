@@ -71,28 +71,36 @@ public class ProductServiceImpl implements ProductService {
 					LOGGER.info("Excluindo produto excluido ou inativo " + productTiny.getProduct().getName());
 					this.productRepository.delete(oldProductDB);
 				}else {
-					oldProductDB = oldProductDB.toBuilder()
-							.barCode(productTiny.getProduct().getCode())
-							.description(productTiny.getProduct().getName())
-							.price1(productTiny.getProduct().getPrice())
-							.price2(productTiny.getProduct().getPromotionalPrice())
-							.dtUpdate(LocalDateTime.now())
-							.build();
-							LOGGER.info("Atualizando produto " + productTiny.getProduct().getName());
-							this.productRepository.save(oldProductDB);						
+					LOGGER.info("Atualizando produto " + productTiny.getProduct().getName());
+					this.updateProductDB(oldProductDB, productTiny);
 				}
 			}else {
-				Product newProductDB = Product.builder()
-						.barCode(productTiny.getProduct().getCode())
-						.description(productTiny.getProduct().getName())
-						.price1(productTiny.getProduct().getPrice())
-						.price2(productTiny.getProduct().getPromotionalPrice())
-						.dtCreate(LocalDateTime.now())
-						.build();
 				LOGGER.info("Inserindo produto " + productTiny.getProduct().getName());
-				this.productRepository.save(newProductDB);
+				this.createProductDB(productTiny);
 			}
 		});
+	}
+	
+	private void updateProductDB(Product oldProductDB, ContainerProductOutputDTO productTiny) {
+		oldProductDB = oldProductDB.toBuilder()
+				.barCode(productTiny.getProduct().getCode())
+				.description(productTiny.getProduct().getName())
+				.price1(productTiny.getProduct().getPrice())
+				.price2(productTiny.getProduct().getPromotionalPrice())
+				.dtUpdate(LocalDateTime.now())
+				.build();
+		this.productRepository.save(oldProductDB);
+	}
+	
+	private void createProductDB(ContainerProductOutputDTO productTiny) {
+		Product newProductDB = Product.builder()
+				.barCode(productTiny.getProduct().getCode())
+				.description(productTiny.getProduct().getName())
+				.price1(productTiny.getProduct().getPrice())
+				.price2(productTiny.getProduct().getPromotionalPrice())
+				.dtCreate(LocalDateTime.now())
+				.build();
+		this.productRepository.save(newProductDB);
 	}
 	
 	private ResponseOutputDTO getAllProductsFromTinyErp(int page) {
