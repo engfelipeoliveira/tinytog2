@@ -36,4 +36,7 @@ public class ProductOutputDTO implements Serializable {
 	@JsonProperty("situacao")
 	private String status;
 	
+	@JsonProperty("gtin")
+	private String gtin;
+	
 }

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +39,11 @@ public class ProductServiceImpl implements ProductService {
 	@Value("${tiny.api_token}")
 	private String TINY_API_TOKEN;
 	
-	@Value("${tiny.api_formato}")
-	private String TINY_API_FORMATO;
+	@Value("${tiny.api_format}")
+	private String TINY_API_FORMAT;
+	
+	@Value("${tiny.api_retry}")
+	private Long TINY_API_RETRY;
 	
 	@Value("${tiny.api_get_products}")
 	private String GET_PRODUCTS;
@@ -58,32 +62,46 @@ public class ProductServiceImpl implements ProductService {
 
 		while (numberPages == null || currentPage <= numberPages) {
 			ResponseOutputDTO responseOutputDTO = this.getAllProductsFromTinyErp(currentPage);
-			productsTiny.addAll(responseOutputDTO.getResponse().getProducts());
-			numberPages = responseOutputDTO.getResponse().getNumberPages();
-			currentPage++;
+			
+			if("erro".equalsIgnoreCase(responseOutputDTO.getResponse().getStatus())){
+				try {
+					LOGGER.info("API Tiny retornou erro. Aguardando alguns segundos para continuar.");
+					Thread.sleep(TINY_API_RETRY);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}	
+			}else {
+				productsTiny.addAll(responseOutputDTO.getResponse().getProducts());
+				numberPages = responseOutputDTO.getResponse().getNumberPages();
+				currentPage++;	
+			}
 		}
 		
 		productsTiny.stream().forEach(productTiny ->{
-			Optional<Product> optionalProductDB = this.productRepository.findByBarCode(productTiny.getProduct().getCode());
-			if(optionalProductDB.isPresent()) {
-				Product oldProductDB = optionalProductDB.get();
-				if(!"A".equalsIgnoreCase(productTiny.getProduct().getStatus())) {
-					LOGGER.info("Excluindo produto excluido ou inativo " + productTiny.getProduct().getName());
-					this.productRepository.delete(oldProductDB);
+			if(StringUtils.isNotBlank(productTiny.getProduct().getCode())) {
+				Optional<Product> optionalProductDB = this.productRepository.findByBarCode(productTiny.getProduct().getGtin());
+				if(optionalProductDB.isPresent()) {
+					Product oldProductDB = optionalProductDB.get();
+					if(!"A".equalsIgnoreCase(productTiny.getProduct().getStatus())) {
+						LOGGER.info("Excluindo produto excluido ou inativo " + productTiny.getProduct().getName());
+						this.productRepository.delete(oldProductDB);
+					}else {
+						LOGGER.info("Atualizando produto " + productTiny.getProduct().getName());
+						this.updateProductDB(oldProductDB, productTiny);
+					}
 				}else {
-					LOGGER.info("Atualizando produto " + productTiny.getProduct().getName());
-					this.updateProductDB(oldProductDB, productTiny);
-				}
-			}else {
-				LOGGER.info("Inserindo produto " + productTiny.getProduct().getName());
-				this.createProductDB(productTiny);
+					if("A".equalsIgnoreCase(productTiny.getProduct().getStatus())) {
+						LOGGER.info("Inserindo produto " + productTiny.getProduct().getName());
+						this.createProductDB(productTiny);						
+					}
+				}				
 			}
 		});
 	}
 	
 	private void updateProductDB(Product oldProductDB, ContainerProductOutputDTO productTiny) {
 		oldProductDB = oldProductDB.toBuilder()
-				.barCode(productTiny.getProduct().getCode())
+				.barCode(productTiny.getProduct().getGtin())
 				.description(productTiny.getProduct().getName())
 				.price1(productTiny.getProduct().getPrice())
 				.price2(productTiny.getProduct().getPromotionalPrice())
@@ -94,7 +112,7 @@ public class ProductServiceImpl implements ProductService {
 	
 	private void createProductDB(ContainerProductOutputDTO productTiny) {
 		Product newProductDB = Product.builder()
-				.barCode(productTiny.getProduct().getCode())
+				.barCode(productTiny.getProduct().getGtin())
 				.description(productTiny.getProduct().getName())
 				.price1(productTiny.getProduct().getPrice())
 				.price2(productTiny.getProduct().getPromotionalPrice())
@@ -104,12 +122,10 @@ public class ProductServiceImpl implements ProductService {
 	}
 	
 	private ResponseOutputDTO getAllProductsFromTinyErp(int page) {
-		String url = String.format("%s/%s?token=%s&formato=%s&pagina=%s", TINY_API_URL, GET_PRODUCTS, TINY_API_TOKEN, TINY_API_FORMATO, page);
+		String url = String.format("%s/%s?token=%s&formato=%s&pagina=%s", TINY_API_URL, GET_PRODUCTS, TINY_API_TOKEN, TINY_API_FORMAT, page);
 		LOGGER.info("Obtendo produtos da API Tiny {}", url);
 		RestTemplate restTemplate = this.buildRestTemplate();
-		ResponseOutputDTO result = restTemplate.getForObject(url, ResponseOutputDTO.class);
-		
-		return result;
+		return restTemplate.getForObject(url, ResponseOutputDTO.class);
 	}
 	
 	private RestTemplate buildRestTemplate() {
