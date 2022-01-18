@@ -1,5 +1,6 @@
 package br.com.api.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -104,10 +105,15 @@ public class ProductServiceImpl implements ProductService {
 				.barCode(productTiny.getProduct().getGtin())
 				.description(productTiny.getProduct().getName())
 				.price1(productTiny.getProduct().getPrice())
-				.price2(productTiny.getProduct().getPromotionalPrice())
+				.price2(this.getPromotionalPrice(productTiny))
 				.dtUpdate(LocalDateTime.now())
 				.build();
 		this.productRepository.save(oldProductDB);
+	}
+	
+	private BigDecimal getPromotionalPrice(ContainerProductOutputDTO productTiny) {
+		BigDecimal promotionalPrice = productTiny.getProduct().getPromotionalPrice();
+		return promotionalPrice != null && promotionalPrice.compareTo(BigDecimal.ZERO) > 0 ? promotionalPrice : null;
 	}
 	
 	private void createProductDB(ContainerProductOutputDTO productTiny) {
@@ -115,7 +121,7 @@ public class ProductServiceImpl implements ProductService {
 				.barCode(productTiny.getProduct().getGtin())
 				.description(productTiny.getProduct().getName())
 				.price1(productTiny.getProduct().getPrice())
-				.price2(productTiny.getProduct().getPromotionalPrice())
+				.price2(this.getPromotionalPrice(productTiny))
 				.dtCreate(LocalDateTime.now())
 				.build();
 		this.productRepository.save(newProductDB);
